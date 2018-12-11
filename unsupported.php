@@ -17,7 +17,7 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="renderer" content="webkit">
     <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <link rel="alternate icon" type="image/png" href="https://static.1cf.co/img/atsast/favicon.png">
+    <link rel="alternate icon" type="image/png" href="https://static.1cf.co/img/voting/favicon.png">
     <!-- Loading Style -->
     <style>
     *{

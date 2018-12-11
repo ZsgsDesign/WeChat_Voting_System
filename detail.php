@@ -1,10 +1,21 @@
 <?php
     require_once("conn.php");
-    if(!isWechat()){
-        redirect("unsupported.php");
+    $oid=@$_GET["oid"];
+    if (is_null($oid)) {
+        redirect("stat.php");
     }
-    if(!isset($_SESSION["uid"])){
-        wxIndex();
+    $oid=intval($oid);
+    if ($oid<=0 || $oid>6) {
+        redirect("stat.php");
+    }
+    $options=["","最想去的学校","最佳演讲","最具创意","最佳表演","最具魅力","看上去是特等奖其实它真的是"];
+
+    $rs=$db->prepare("SELECT qid,COUNT(uid) tot FROM vote WHERE answer=? GROUP BY qid ASC");
+    $rs->execute([$oid]);
+    $ret=$rs->fetchAll();
+    $stat=[0,0,0,0,0,0];
+    foreach ($ret as $r) {
+        $stat[intval($r["qid"])-1]=intval($r["tot"]);
     }
 ?>
 
@@ -13,7 +24,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>投票</title>
+    <title>投票结果</title>
     <!-- Necessarily Declarations -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -122,28 +133,10 @@
     <link rel="stylesheet" href="https://static.1cf.co/css/bootstrap-material-design.min.css">
     <link rel="stylesheet" href="https://static.1cf.co/css/wemd-color-scheme.css">
     <link rel="stylesheet" href="https://static.1cf.co/fonts/MDI-WXSS/MDI.css">
-    <link rel="stylesheet" href="https://static.1cf.co/css/animate.min.css">
     <style>
-        .container{
-            padding:0;
-        }
-        section{
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            background: #fff;
-            padding:1rem;
-            box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 20px;
-        }
-        h5{
-            color: #7a8e97;
-            margin-bottom: 2rem;
-        }
-        p{
-            color: #7a8e97;
-        }
-        options{
+        card {
             display: block;
-            /* box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 30px; */
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 30px;
             border-radius: 4px;
             transition: .2s ease-out .0s;
             color: #7a8e97;
@@ -155,106 +148,81 @@
             padding:1rem;
             overflow: hidden;
             z-index: 0;
-            counter-increment: options;
-            /* counter-reset: options 1; */
+            width:100%;
         }
-        options.hover {
-            box-shadow: rgba(0, 0, 0, 0.15) 0px 0px 20px;
+        card:hover{
+            box-shadow: rgba(0, 0, 0, 0.15) 0px 0px 40px;
         }
-        options.disabled {
-            display:none;
-            pointer-events: none;
-        }
-        options::before {
-            content: counter(options) ". ";
+        .container{
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
         }
     </style>
     <div class="container">
-        <section class="animated" style="display:none;">
-            <h5><i class="MDI help-circle-outline"></i> <span id="question"></span></h5>
-            <div id="option_group">
+
+        <card>
+            <h5><i class="MDI certificate"></i> <?php echo $options[$oid]; ?></h5>
+            <div style="height:60vh;position:relative;">
+                <canvas id="myChart"></canvas>
             </div>
-            <div class="text-right" id="submit_btn">
-                
-            </div>
-        </section>
-        <p class="text-center animated">Author: John Zhang</p>
+        </card>
+    
     </div>
 
     <script src="https://static.1cf.co/js/jquery-3.2.1.min.js"></script>
     <script src="https://static.1cf.co/js/popper.min.js"></script>
     <script src="https://static.1cf.co/js/snackbar.min.js"></script>
     <script src="https://static.1cf.co/js/bootstrap-material-design.js"></script>
+    <script src="https://static.1cf.co/js/Chart.bundle.min.js"></script>
     <script>
         $(document).ready(function () { $('body').bootstrapMaterialDesign(); });
-
         window.addEventListener("load",function() {
-            fetch();
+            $('loading').css({"opacity":"0","pointer-events":"none"});
+            plot();
         }, false);
-        
-        var selectedOption = null;
-        var curQuestion = null;
-        var submitProc=false;
+        function plot(){
 
-        function submit(){
-            if(submitProc) return;
-            else submitProc=true;
-            if(selectedOption===null){
-                alert("请选择一个选项");
-                return;
-            }
-            $.post("ajax.php",{
-                action: "submit",
-                qid: curQuestion,
-                oid: selectedOption
-            },function(result){
-                submitProc=false;
-                if(result.ret==200){
-                    fetch();
-                }else{
-                    alert(result.desc);
+            var ctx = document.getElementById("myChart").getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["河海大学", "南京中医药大学", "东南大学", "南京农业大学", "南京信息工程大学", "南京林业大学"],
+                    datasets: [{
+                        label: '投票数',
+                        data: [<?php foreach ($stat as $s) { echo "$s,"; } ?>],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)',
+                            'rgba(255, 159, 64, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255,99,132,1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio:false,
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero:true
+                            }
+                        }]
+                    }
                 }
             });
-        }
 
-        function fetch(){
-            $("section").removeClass("zoomIn");
-            $("section").addClass("zoomOut");
-            $("#submit_btn").html("");
-            $.post("ajax.php",{
-                action:"fetch",
-            },function(result){
-                if(result.ret==200){
-                    $('loading').css({"opacity":"0","pointer-events":"none"});
-                    $("#question").html(result.data.question.name);
-                    $("#option_group").html("");
-                    result.data.option.forEach(item => {
-                        console.log(item);
-                        $("#option_group").append('<options data-value="' + item.oid + '">' + item.name + '</options>');
-                    });
-
-                    selectedOption=null;
-                    curQuestion=result.data.question.qid;
-
-                    $("section").css("display","block");
-                    $("section").removeClass("zoomOut");
-                    $("section").addClass("zoomIn");
-                    $("p").addClass("jackInTheBox");
-
-                    $("options").click(function(){
-                        $("[data-value='"+selectedOption+"']").removeClass("hover");
-                        selectedOption = $(this).attr("data-value");
-                        $(this).addClass("hover");
-                        if($("#submit_btn").html()==""){
-                            $("#submit_btn").html('<button type="button" class="btn btn-success animated jackInTheBox" style="will-change:scale;" onclick="submit()">提交</button>');
-                        }
-                    });
-                }else if(result.ret==201){
-                    location.href="success.php";
-                }else{
-                    alert("网络连接异常");
-                }
-            });
         }
     </script>
 </body>
