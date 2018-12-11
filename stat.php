@@ -1,5 +1,9 @@
 <?php
     require_once("conn.php");
+    if(!isset($_SESSION["admin"])){
+        header("HTTP/1.0 404 Not Found");
+        return;
+    }
 ?>
 
 <!DOCTYPE html>

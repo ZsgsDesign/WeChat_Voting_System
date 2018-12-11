@@ -3,15 +3,15 @@
 
     header('Content-Type:application/json; charset=utf-8');
 
-    if (!isWechat()) {
+    $action=@$_POST["action"];
+
+    if (!isWechat() && $action!="admin") {
         exit(json_encode([
             "ret"=>"1001",
             "desc"=>"请使用微信浏览器",
             "data"=>null
         ]));
     }
-
-    $action=@$_POST["action"];
 
     if (is_null($action)) {
         exit(json_encode([
@@ -21,7 +21,7 @@
         ]));
     }
 
-    if (@!isset($_SESSION["uid"])) {
+    if (@!isset($_SESSION["uid"]) && $action!="admin") {
         exit(json_encode([
             "ret"=>"1002",
             "desc"=>"请先登录",
@@ -95,6 +95,29 @@
                 "option"=>$option
             ]
         ]));
+    } elseif ($action=="admin") {
+        $pass=@$_POST["pass"];
+        if(is_null($pass) ){
+            exit(json_encode([
+                "ret"=>"1000",
+                "desc"=>"参数不全",
+                "data"=>null
+            ]));
+        }
+        if($pass=="sastsast+1s"){
+            $_SESSION["admin"]=1;
+            exit(json_encode([
+                "ret"=>"200",
+                "desc"=>"成功",
+                "data"=>null
+            ]));
+        }else{
+            exit(json_encode([
+                "ret"=>"1005",
+                "desc"=>"密码错误",
+                "data"=>null
+            ]));
+        }
     } else {
         exit(json_encode([
             "ret"=>"1003",
