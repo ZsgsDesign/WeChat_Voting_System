@@ -5,7 +5,7 @@
     }
     
     $openid=wxBack();
-    
+
     $rs=$db->prepare("SELECT * from user where OPEN_ID=?");
     $rs->execute([$openid]);
     $ret=$rs->fetchAll();
@@ -17,6 +17,6 @@
         // $ret=$rs->fetchAll();
         $_SESSION["uid"]=$db->lastInsertId();
     }else{
-        $_SESSION["uid"]=$ret["uid"];
+        $_SESSION["uid"]=$ret[0]["uid"];
     }
     redirect("./");
