@@ -204,7 +204,14 @@
     <script src="https://static.1cf.co/js/bootstrap-material-design.js"></script>
     <script>
         $(document).ready(function () { $('body').bootstrapMaterialDesign(); });
-
+        document.addEventListener('WeixinJSBridgeReady', function onBridgeReady() {
+            WeixinJSBridge.call('hideOptionMenu');
+            $("img").bind("click", function() {
+                WeixinJSBridge.invoke("imagePreview", {
+                    "urls": [$("img").attr("data-preload")]
+                });
+            });
+        });
         window.addEventListener("load",function() {
             fetch();
         }, false);
